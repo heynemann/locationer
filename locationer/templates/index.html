@@ -1,0 +1,34 @@
+<html>
+    <head>
+    </head>
+
+    <body>
+        <input type="text" class="zip" />
+        <button id="find">Find</button>
+
+        <div class="label"></div>
+        <ul class="results"></ul>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+
+        <script>
+            label = $('.label');
+            input = $('.zip')
+            results = $('.results')
+
+            $('#find').bind('click', function(ev) {
+                $.getJSON('/locations?zipcode=' + input.val(), function(data, status, xhr) {
+                    results.html('');
+                    label.html('Found ' + data.length + ' results for ' + input.val() + '.');
+                    console.log(data);
+
+                    for (var i=0; i < data.length; i++) {
+                        var values = data[i].split('@@');
+                        li = $('<li>' + data[0] + '</li>');
+                        results.append(li);
+                    }
+                }.bind(this));
+            })
+        </script>
+    </body>
+</html>
