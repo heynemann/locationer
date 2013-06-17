@@ -5,7 +5,7 @@ import sys
 import csv
 import datetime
 import os.path
-import redis
+import _mysql
 
 
 IGNORE = ('at', 'on', 'in', 'for', 'by', 'and', 'from', 'of', 'to')
@@ -20,16 +20,24 @@ def main():
 
 
 def import_csv(path, out):
-    db = redis.StrictRedis(
-        host='localhost',
-        port=7775,
-        db=0
-    )
+    db = _mysql.connect(
+        host="localhost", user="root",
+        passwd="", db="locationer")
+
+    db.query('''
+        CREATE TABLE IF NOT EXISTS `location_london` (
+         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+         postcode VARCHAR(100) NOT NULL,
+         content BLOB NOT NULL,
+         INDEX `postcode` (`postcode` ASC)
+       ) engine = MyISAM ;
+    ''')
 
     with open(path, 'rb') as fp:
         reader = csv.reader(fp)
         now = datetime.datetime.now()
 
+        query_values = []
         for number, row in enumerate(reader):
             if number == 0:
                 continue
@@ -73,13 +81,20 @@ def import_csv(path, out):
 
             data['sortable_address'] = ("%s - %s, %s, %s" % (data['name'], data['street_address'], data['door_number'], data['town'])).lower()
 
-            db.sadd(data['postcode'], '%s@@%s@@%s\n' % (data['sortable_address'], data['latitude'], data['longitude']))
+            query_values.append('("%s", "%s@@%s@@%s")' % (data['postcode'], data['sortable_address'], data['latitude'], data['longitude']))
 
             # Output a dot
             if number % 10000 == 0:
                 #output.write("".join(locations))
                 #locations = []
+                query = 'INSERT INTO `location_london` (postcode, content) VALUES %s;' % (','.join(query_values))
+                db.query(query)
+                query_values = []
                 sys.stdout.write("%d (%.2f%%)\n" % (number, (number / 29000000.0 * 100.0)))
+
+        query = 'INSERT INTO `location_london` (postcode, content) VALUES %s;' % (','.join(query_values))
+        db.query(query)
+
 
 if __name__ == '__main__':
     main()

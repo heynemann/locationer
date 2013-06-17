@@ -21,9 +21,8 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.application.config
 
     @property
-    def redis(self):
-        return self.application.redis
-
+    def db(self):
+        return self.application.db
 
 class HomeHandler(BaseHandler):
     @tornado.web.asynchronous
@@ -37,7 +36,10 @@ class LocationsHandler(BaseHandler):
     def get(self):
         zipcode = self.get_argument('zipcode')
 
-        items = tuple(self.redis.smembers(zipcode.upper()))
+        query = "SELECT * FROM `location_london` WHERE postcode='%s'" % zipcode.upper()
 
-        self.write(dumps(items))
+        self.db.query(query)
+        results = self.db.store_result().fetch_row(maxrows=100)
+        # items = tuple(self.redis.smembers(zipcode.upper()))
+        self.write(str([result[2] for result in results]))
         self.finish()

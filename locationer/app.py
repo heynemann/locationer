@@ -3,7 +3,7 @@
 
 from os.path import abspath, join, dirname
 
-import redis
+import _mysql
 import tornado.web
 from tornado.web import url
 
@@ -21,12 +21,9 @@ def configure_app(self, config=None, log_level='INFO', debug=False, static_path=
         url(r'/locations', LocationsHandler, name="location"),
     ]
 
-    self.redis = redis.StrictRedis(
-        host=self.config.REDIS_HOST,
-        port=self.config.REDIS_PORT,
-        db=self.config.REDIS_DB_COUNT,
-        password=self.config.REDIS_PASSWORD
-    )
+    self.db = _mysql.connect(
+        host="localhost", user="root",
+        passwd="", db="locationer")
 
     options = {
         "cookie_secret": self.config.COOKIE_SECRET,
