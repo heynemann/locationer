@@ -21,10 +21,12 @@ def main():
 
 def import_csv(path, out):
     db = redis.StrictRedis(
-        host='localhost',
-        port=7775,
+        host='192.241.200.46',
+        password='tdispatch123',
         db=0
     )
+
+    pipe = db.pipeline(transaction=False)
 
     with open(path, 'rb') as fp:
         reader = csv.reader(fp)
@@ -73,12 +75,14 @@ def import_csv(path, out):
 
             data['sortable_address'] = ("%s - %s, %s, %s" % (data['name'], data['street_address'], data['door_number'], data['town'])).lower()
 
-            db.sadd(data['postcode'], '%s@@%s@@%s\n' % (data['sortable_address'], data['latitude'], data['longitude']))
+            pipe.sadd(data['postcode'], '%s@@%s@@%s\n' % (data['sortable_address'], data['latitude'], data['longitude']))
 
             # Output a dot
-            if number % 10000 == 0:
+            if number % 100000 == 0:
                 #output.write("".join(locations))
                 #locations = []
+                pipe.execute()
+                pipe = db.pipeline(transaction=False)
                 sys.stdout.write("%d (%.2f%%)\n" % (number, (number / 29000000.0 * 100.0)))
 
 if __name__ == '__main__':
